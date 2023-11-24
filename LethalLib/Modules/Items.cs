@@ -64,12 +64,12 @@ namespace LethalLib.Modules
                 {
                     new CompatibleNoun()
                     {
-                        noun = self.terminalNodes.allKeywords.First(keyword => keyword.word == "confirm"),
+                        noun = self.terminalNodes.allKeywords.First(mykeyword => mykeyword.word == "confirm"),
                         result = buyNode2
                     },
                     new CompatibleNoun()
                     {
-                        noun = self.terminalNodes.allKeywords.First(keyword => keyword.word == "deny"),
+                        noun = self.terminalNodes.allKeywords.First(mykeyword => mykeyword.word == "deny"),
                         result = cancelPurchaseNode
                     }
                 };
