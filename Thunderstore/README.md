@@ -1,11 +1,14 @@
 # LethalLib  
-**A library for adding new content to Lethal Comany, mainly for personal use.**
+**A library for adding new content to Lethal Company, mainly for personal use.**
   
 Currently includes: 
 - Custom Scrap Item API
+- Custom Shop Item API
 - Custom Enemy API (Untested)
 - Network Prefab API
 
-# Latest Changes  
+# Recent Changes 
    
-- Fixed of the hooks, forgot to call the original functions causing the game to lock up.
+- Added custom info command support for shop items.
+- Fixed item price system.
+- Fixed buy sound on custom items.
