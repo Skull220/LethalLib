@@ -41,10 +41,7 @@ namespace LethalLib.Modules
         static TerminalKeyword RouteKeyword;
         static TerminalKeyword InfoKeyword;
 
-        [HarmonyPatch(typeof(StartOfRound), "Awake")]
-        [HarmonyPostfix]
-        [HarmonyPriority(0)]
-        private static void GrabTerminal(StartOfRound __instance) {
+        public static void GrabTerminal(StartOfRound __instance){
             ActiveTerminal = GameObject.Find("TerminalScript").GetComponent<Terminal>(); //Terminal object reference 
             RouteKeyword = ActiveTerminal.terminalNodes.allKeywords[26];
             InfoKeyword = ActiveTerminal.terminalNodes.allKeywords[6];

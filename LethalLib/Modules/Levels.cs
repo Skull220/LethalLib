@@ -72,7 +72,6 @@ namespace LethalLib.Modules
 
         private static Dictionary<string, CustomLevel> CustomLevelList;
         
-
         private static void AddMoonToMoonsList(CustomLevel Moon, StartOfRound __instance) {
             SelectableLevel MyNewMoon = Moon.NewLevel;  
             {
@@ -108,17 +107,14 @@ namespace LethalLib.Modules
         [HarmonyPostfix]
         private static void AddMoonsToTerminal(StartOfRound __instance) {
             foreach (CustomLevel NextCustomLevel in CustomLevelList.Values) {
+                TerminalUtils.GrabTerminal(__instance);
                 TerminalUtils.AddMoonTerminalEntry(NextCustomLevel.LevelKeyword, NextCustomLevel.NewLevel);
                 TerminalUtils.AddRouteNode(NextCustomLevel.LevelKeyword, NextCustomLevel.TerminalRoute);
                 TerminalUtils.AddMoonInfo(NextCustomLevel.LevelKeyword, NextCustomLevel.LevelTerminalInfo);
             }  
         }
 
-        //Destroy the necessary actors and set our scene
-        [HarmonyPatch(typeof(StartOfRound), "SceneManager_OnLoadComplete1")]
-        [HarmonyPostfix]
-        private static void CustomLevelInit(StartOfRound __instance) {
-
+        private static void CreateMoonOnNav(StartOfRound __instance) {
             if (!CustomLevelList.ContainsKey(__instance.currentLevel.PlanetName)) {
                 return;
             }
@@ -145,7 +141,15 @@ namespace LethalLib.Modules
             }
             //Load our custom prefab
             GameObject MyLevelAsset = LevelToLoad.LevelPrefab as GameObject;
-            GameObject MyInstantiatedLevel = GameObject.Instantiate(MyLevelAsset);
+            GameObject.Instantiate(MyLevelAsset);
+
+        }
+
+        //Destroy the necessary actors and set our scene
+        [HarmonyPatch(typeof(StartOfRound), "SceneManager_OnLoadComplete1")]
+        [HarmonyPostfix]
+        private static void CustomLevelInit(StartOfRound __instance) {
+            CreateMoonOnNav(__instance);
         }       
     }
 }
