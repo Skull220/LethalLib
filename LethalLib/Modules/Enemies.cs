@@ -4,7 +4,9 @@ using MonoMod.Cil;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
+using UnityEngine;
 using static LethalLib.Modules.Items;
 
 namespace LethalLib.Modules
@@ -20,13 +22,39 @@ namespace LethalLib.Modules
 
         private static void Terminal_Start(On.Terminal.orig_Start orig, Terminal self)
         {
+            var infoKeyword = self.terminalNodes.allKeywords.First(keyword => keyword.word == "info");
             foreach (SpawnableEnemy spawnableEnemy in spawnableEnemies)
             {
-                if (spawnableEnemy.terminalKeyword != null && spawnableEnemy.terminalNode != null)
+                // if terminal node is null, create one
+                
+
+                if (spawnableEnemy.terminalNode == null)
                 {
-                    self.terminalNodes.terminalNodes.Add(spawnableEnemy.terminalNode);
-                    self.terminalNodes.allKeywords.AddItem(spawnableEnemy.terminalKeyword);
+                    spawnableEnemy.terminalNode = ScriptableObject.CreateInstance<TerminalNode>();
+                    spawnableEnemy.terminalNode.displayText = $"{spawnableEnemy.enemy.enemyName}\n\nDanger level: Unknown\n\n[No information about this creature was found.]\n\n";
+                    spawnableEnemy.terminalNode.clearPreviousText = true;
+                    spawnableEnemy.terminalNode.maxCharactersToType = 35;
+                    spawnableEnemy.terminalNode.creatureName = spawnableEnemy.enemy.enemyName;
                 }
+
+                var keyword = TerminalUtils.CreateTerminalKeyword(spawnableEnemy.terminalNode.creatureName.ToLowerInvariant().Replace(" ", "-"), defaultVerb: infoKeyword);
+                var allKeywords = self.terminalNodes.allKeywords.ToList();
+                allKeywords.Add(keyword);
+                self.terminalNodes.allKeywords = allKeywords.ToArray();
+
+                var itemInfoNouns = infoKeyword.compatibleNouns.ToList();
+                itemInfoNouns.Add(new CompatibleNoun()
+                {
+                    noun = keyword,
+                    result = spawnableEnemy.terminalNode
+                });
+                infoKeyword.compatibleNouns = itemInfoNouns.ToArray();
+
+                spawnableEnemy.terminalNode.creatureFileID = self.enemyFiles.Count;
+
+                self.enemyFiles.Add(spawnableEnemy.terminalNode);
+
+                spawnableEnemy.enemy.enemyPrefab.GetComponentInChildren<ScanNodeProperties>().creatureScanID = spawnableEnemy.terminalNode.creatureFileID;
             }
             orig(self);
         }
@@ -53,7 +81,7 @@ namespace LethalLib.Modules
                             };
 
                             // make sure spawnableScrap does not already contain item
-                            Plugin.logger.LogInfo($"Checking if {spawnableEnemy.enemy.name} is already in {name}");
+                            //Plugin.logger.LogInfo($"Checking if {spawnableEnemy.enemy.name} is already in {name}");
 
                             /*
                             if (!level.spawnableEnemies.Any(x => x.spawnableEnemy == spawnableEnemy.enemy))
@@ -107,9 +135,8 @@ namespace LethalLib.Modules
             public int rarity;
             public Levels.LevelTypes spawnLevels;
             public SpawnType spawnType;
-            public TerminalKeyword terminalKeyword;
             public TerminalNode terminalNode;
-
+            public string modName;
 
 
             public SpawnableEnemy(EnemyType enemy, int rarity, Levels.LevelTypes spawnLevels, SpawnType spawnType)
@@ -123,12 +150,28 @@ namespace LethalLib.Modules
 
         public static List<SpawnableEnemy> spawnableEnemies = new List<SpawnableEnemy>();
 
-        public static void RegisterEnemy(EnemyType enemy, int rarity, Levels.LevelTypes levelFlags, SpawnType spawnType, TerminalKeyword terminalKeyword = null, TerminalNode terminalNode = null)
+        public static void RegisterEnemy(EnemyType enemy, int rarity, Levels.LevelTypes levelFlags, SpawnType spawnType, TerminalNode infoNode = null)
         {
             var spawnableEnemy = new SpawnableEnemy(enemy, rarity, levelFlags, spawnType);
 
-            spawnableEnemy.terminalKeyword = terminalKeyword;
-            spawnableEnemy.terminalNode = terminalNode;
+            spawnableEnemy.terminalNode = infoNode;
+
+            var callingAssembly = Assembly.GetCallingAssembly();
+            var modDLL = callingAssembly.GetName().Name;
+            spawnableEnemy.modName = modDLL;
+
+            spawnableEnemies.Add(spawnableEnemy);
+        }
+
+        public static void RegisterEnemy(EnemyType enemy, int rarity, Levels.LevelTypes levelFlags, TerminalNode infoNode = null)
+        {
+            var spawnableEnemy = new SpawnableEnemy(enemy, rarity, levelFlags, enemy.isDaytimeEnemy ? SpawnType.Daytime : enemy.isOutsideEnemy ? SpawnType.Outside : SpawnType.Default);
+
+            spawnableEnemy.terminalNode = infoNode;
+
+            var callingAssembly = Assembly.GetCallingAssembly();
+            var modDLL = callingAssembly.GetName().Name;
+            spawnableEnemy.modName = modDLL;
 
             spawnableEnemies.Add(spawnableEnemy);
         }
