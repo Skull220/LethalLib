@@ -1,8 +1,6 @@
 ﻿using HarmonyLib;
-using MOON_API;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 namespace LethalLib.Modules
@@ -25,14 +23,17 @@ namespace LethalLib.Modules
         /* This class is called levels so I'm putting all the custom level code here.
          * If I need to move it to a seperate class let me know -Skull
          */
+
+        public static Dictionary<string, CustomLevel> CustomLevelList;
+
         public class CustomLevel {
             public TerminalKeyword LevelKeyword;
             public TerminalNode TerminalRoute;
             public SelectableLevel NewLevel;
             public TerminalNode LevelTerminalInfo;         
             public GameObject LevelPrefab;
-            public static int MoonID = 8;
-            private static string MoonFriendlyName;
+            public static int MoonID = 9;
+            public string MoonFriendlyName;
 
             private static List<string> ObjectsToDestroy = new List<string> {
                 "CompletedVowTerrain",
@@ -66,13 +67,12 @@ namespace LethalLib.Modules
                 LevelPrefab = newLevelPrefab;
                 MoonFriendlyName = NewLevel.PlanetName;
 
-                CustomLevelList.Add(MoonFriendlyName, this);
+                CustomLevelList.AddItem(new KeyValuePair<string, CustomLevel>(MoonFriendlyName, this));
+                
             }
         }
-
-        private static Dictionary<string, CustomLevel> CustomLevelList;
-        
-        private static void AddMoonToMoonsList(CustomLevel Moon, StartOfRound __instance) {
+ 
+        public static void AddMoonToMoonsList(CustomLevel Moon, StartOfRound __instance) {
             SelectableLevel MyNewMoon = Moon.NewLevel;  
             {
                 /* TODO: these assignments should only be made if there's no entry in any of these arrays already.
@@ -89,36 +89,24 @@ namespace LethalLib.Modules
                 MyNewMoon.OutsideEnemies = __instance.levels[0].OutsideEnemies;
                 MyNewMoon.DaytimeEnemies = __instance.levels[0].DaytimeEnemies;
             }
-            //Core.AddMoon(MyNewMoon); Hopefully this is unnecessary now
-        }
-
-        //Defining the custom moon for the API
-        [HarmonyPatch(typeof(StartOfRound), "Awake")]
-        [HarmonyPrefix]
-        private static bool AddMoonsToList(StartOfRound __instance) {
-            foreach (CustomLevel NextCustomLevel in CustomLevelList.Values) {
-                AddMoonToMoonsList(NextCustomLevel, __instance);
+            int num = -1;
+            for (int i = 0; i < __instance.levels.Length; i++) {
+                if (__instance.levels[i] == null) {
+                    num = i;
+                    break;
+                }
             }
-            return true;
+            if (num == -1) {
+                throw new NullReferenceException("No null value found in StartOfRound.levels");
+            }
+            __instance.levels[num] = Moon.NewLevel;
         }
 
-        //Add the custom moon to the terminal
-        [HarmonyPatch(typeof(StartOfRound), "Awake")]
-        [HarmonyPostfix]
-        private static void AddMoonsToTerminal(StartOfRound __instance) {
-            foreach (CustomLevel NextCustomLevel in CustomLevelList.Values) {
-                TerminalUtils.GrabTerminal(__instance);
-                TerminalUtils.AddMoonTerminalEntry(NextCustomLevel.LevelKeyword, NextCustomLevel.NewLevel);
-                TerminalUtils.AddRouteNode(NextCustomLevel.LevelKeyword, NextCustomLevel.TerminalRoute);
-                TerminalUtils.AddMoonInfo(NextCustomLevel.LevelKeyword, NextCustomLevel.LevelTerminalInfo);
-            }  
-        }
-
-        private static void CreateMoonOnNav(StartOfRound __instance) {
+        public static void CreateMoonOnNav(StartOfRound __instance) {
             if (!CustomLevelList.ContainsKey(__instance.currentLevel.PlanetName)) {
                 return;
             }
-            CustomLevel LevelToLoad = CustomLevelList.GetValueSafe<string, CustomLevel>(__instance.currentLevel.PlanetName);
+            CustomLevel LevelToLoad = CustomLevelList[__instance.currentLevel.PlanetName];
             Debug.Log(" LethalLib Moon Tools: Loading into level " + __instance.currentLevel.PlanetName);
 
             GameObject[] allObjects = GameObject.FindObjectsOfType<GameObject>();
@@ -144,12 +132,5 @@ namespace LethalLib.Modules
             GameObject.Instantiate(MyLevelAsset);
 
         }
-
-        //Destroy the necessary actors and set our scene
-        [HarmonyPatch(typeof(StartOfRound), "SceneManager_OnLoadComplete1")]
-        [HarmonyPostfix]
-        private static void CustomLevelInit(StartOfRound __instance) {
-            CreateMoonOnNav(__instance);
-        }       
     }
 }
