@@ -37,7 +37,7 @@ namespace LethalLib.Modules
         
         //Terminal commands for custom moon stuff
 
-        static Terminal ActiveTerminal;
+        public static Terminal ActiveTerminal;
         static TerminalKeyword RouteKeyword;
         static TerminalKeyword InfoKeyword;
 
@@ -51,20 +51,34 @@ namespace LethalLib.Modules
         }
         public static void AddMoonTerminalEntry(TerminalKeyword MoonEntryName, SelectableLevel Level) { 
             TerminalKeyword TerminalEntry = MoonEntryName; //get our bundle's Terminal Keyword 
-
+            TerminalEntry.defaultVerb = RouteKeyword;
             Array.Resize<SelectableLevel>(ref ActiveTerminal.moonsCatalogueList, ActiveTerminal.moonsCatalogueList.Length + 1); //Resize list of moons displayed 
-            ActiveTerminal.moonsCatalogueList[ActiveTerminal.moonsCatalogueList.Length] = Level; //Add our moon to that list
+            ActiveTerminal.moonsCatalogueList[ActiveTerminal.moonsCatalogueList.Length -1 ] = Level; //Add our moon to that list
                 
             Array.Resize<TerminalKeyword>(ref ActiveTerminal.terminalNodes.allKeywords, ActiveTerminal.terminalNodes.allKeywords.Length + 1);
             ActiveTerminal.terminalNodes.allKeywords[ActiveTerminal.terminalNodes.allKeywords.Length - 1] = TerminalEntry; //Add our terminal entry 
             TerminalEntry.defaultVerb = RouteKeyword; //Set its default verb to "route"
         }
-        public static void AddMoonConfirmation(TerminalKeyword MoonEntryName, TerminalNode RouteWord) {
+        public static void AddRouteNode(TerminalKeyword MoonEntryName, TerminalNode RouteNode) {
+            RouteNode.terminalOptions[0].noun = ActiveTerminal.terminalNodes.allKeywords[4];
+            RouteNode.terminalOptions[0].result = new TerminalNode {
+                displayText = "You have cancelled the order.",
+                maxCharactersToType = 25,
+                buyItemIndex = -1,
+                buyRerouteToMoon = -1,
+                displayPlanetInfo = -1,
+                shipUnlockableID = -1,
+                creatureFileID = -1,
+                storyLogFileID = -1,
+                playSyncedClip = -1
+            };
+            RouteNode.terminalOptions[1].noun = ActiveTerminal.terminalNodes.allKeywords[3];
+
             //Resize our RouteKeyword array and put our new route confirmation into it
             Array.Resize<CompatibleNoun>(ref RouteKeyword.compatibleNouns, RouteKeyword.compatibleNouns.Length + 1);
             RouteKeyword.compatibleNouns[RouteKeyword.compatibleNouns.Length - 1] = new CompatibleNoun {
                 noun = MoonEntryName,
-                result = RouteWord
+                result = RouteNode
             };
         }
         public static void AddMoonInfo(TerminalKeyword MoonEntryName, TerminalNode MoonInfo) {

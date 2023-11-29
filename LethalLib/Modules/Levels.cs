@@ -1,4 +1,5 @@
 ﻿using HarmonyLib;
+using MOON_API;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -21,48 +22,19 @@ namespace LethalLib.Modules
             All = ExperimentationLevel | AssuranceLevel | VowLevel | OffenseLevel | MarchLevel | RendLevel | DineLevel | TitanLevel
         }
 
-        private static Dictionary<string, CustomLevel> CustomLevelList;
-
         /* This class is called levels so I'm putting all the custom level code here.
          * If I need to move it to a seperate class let me know -Skull
          */
-        public class CustomLevel { 
+        public class CustomLevel {
+            public TerminalKeyword LevelKeyword;
+            public TerminalNode TerminalRoute;
             public SelectableLevel NewLevel;
-            public TerminalKeyword TerminalAsset;
-            public TerminalNode TerminalRouteConfirmation;
-            public TerminalNode TerminalInfo;
-            GameObject LevelPrefab;
+            public TerminalNode LevelTerminalInfo;         
+            public GameObject LevelPrefab;
+            public static int MoonID = 8;
+            private static string MoonFriendlyName;
 
-            public SelectableLevel GetLevel() { return NewLevel; }
-            public void SetLevel(SelectableLevel newSelectableLevel) { NewLevel = newSelectableLevel; }
-            
-            public TerminalKeyword GetTerminalName() { return TerminalAsset; }
-            public void SetTerminalName(TerminalKeyword NewName) { TerminalAsset = NewName; }
-            
-            public TerminalNode GetTerminalRoute() { return TerminalRouteConfirmation; }
-            public void SetTerminalRoute(TerminalNode newRoute) { TerminalRouteConfirmation = newRoute; }
-
-            public TerminalNode GetTerminalInfo() { return TerminalInfo; }
-            public void SetTerminalInfo(TerminalNode newInfo) { TerminalRouteConfirmation = newInfo; }
-
-            //No setter for this one since this should be defined in and agree with what's in the unity asset 
-            public string GetLevelName() { return NewLevel.PlanetName; }
-
-            public GameObject GetLevelObject() { return LevelPrefab; }
-            public void SetLevelObject(GameObject newPrefab) {  LevelPrefab = newPrefab; }
-
-            public CustomLevel(SelectableLevel newSelectableLevel, TerminalKeyword newTerminalAsset,
-                    TerminalNode NewRouteConfirmation, TerminalNode newTerminalInfo, GameObject newLevelPrefab) {
-                NewLevel = newSelectableLevel;
-                TerminalAsset = newTerminalAsset;
-                TerminalRouteConfirmation = NewRouteConfirmation;
-                TerminalInfo = newTerminalInfo;
-                LevelPrefab = newLevelPrefab;
-                CustomLevelList.Add(NewLevel.PlanetName, this);
-            }
-        }
-
-        private static List<string> ObjectsToDestroy = new List<string> {
+            private static List<string> ObjectsToDestroy = new List<string> {
                 "CompletedVowTerrain",
                 "tree",
                 "Tree",
@@ -73,60 +45,107 @@ namespace LethalLib.Modules
                 "GroundFog",
                 "Sky and Fog Global Volume",
                 "SunTexture"
-        };
+            };
 
-        //This is just a fix for an error I get sometimes from Ooblterra. Probably not necessary once I figure that out
+            public static void AddObjectToDestroyList(string NewObjectName) {
+                ObjectsToDestroy.Add(NewObjectName);
+            }
+
+            public List<string> GetDestroyList() { return ObjectsToDestroy; }
+
+            public CustomLevel(SelectableLevel newSelectableLevel, TerminalKeyword newTerminalAsset,
+                    TerminalNode NewRoute, TerminalNode newTerminalInfo, GameObject newLevelPrefab) {
+                MoonID = MoonID++;
+                NewLevel = newSelectableLevel;
+                NewLevel.levelID = MoonID;
+                LevelKeyword = newTerminalAsset;
+                TerminalRoute = NewRoute;
+                NewRoute.buyRerouteToMoon = MoonID;
+                NewRoute.terminalOptions[1].result.buyRerouteToMoon = MoonID;
+                LevelTerminalInfo = newTerminalInfo;
+                LevelPrefab = newLevelPrefab;
+                MoonFriendlyName = NewLevel.PlanetName;
+
+                CustomLevelList.Add(MoonFriendlyName, this);
+            }
+        }
+
+        private static Dictionary<string, CustomLevel> CustomLevelList;
+        
+
+        private static void AddMoonToMoonsList(CustomLevel Moon, StartOfRound __instance) {
+            SelectableLevel MyNewMoon = Moon.NewLevel;  
+            {
+                /* TODO: these assignments should only be made if there's no entry in any of these arrays already.
+                 * Hopefully, the end user would be able to put their custom monsters/scrap/whatever into the 
+                 * SelectableLevel class they made in unity or set it before this point or something.
+                 * I want to make these default values, but the problem with that is we can't retrieve the instance without it existing.
+                 */
+                MyNewMoon.planetPrefab = __instance.levels[2].planetPrefab;
+                MyNewMoon.spawnableMapObjects = __instance.levels[2].spawnableMapObjects;
+                MyNewMoon.spawnableOutsideObjects = __instance.levels[2].spawnableOutsideObjects;
+                MyNewMoon.spawnableScrap = __instance.levels[2].spawnableScrap;
+                MyNewMoon.Enemies = __instance.levels[5].Enemies;
+                MyNewMoon.levelAmbienceClips = __instance.levels[2].levelAmbienceClips;
+                MyNewMoon.OutsideEnemies = __instance.levels[0].OutsideEnemies;
+                MyNewMoon.DaytimeEnemies = __instance.levels[0].DaytimeEnemies;
+            }
+            //Core.AddMoon(MyNewMoon); Hopefully this is unnecessary now
+        }
+
+        //Defining the custom moon for the API
         [HarmonyPatch(typeof(StartOfRound), "Awake")]
         [HarmonyPrefix]
         private static bool AddMoonsToList(StartOfRound __instance) {
-            //Create new moon based on vow
-            foreach (CustomLevel moon in CustomLevelList.Values) {
-                moon.GetLevel().spawnableScrap = __instance.levels[2].spawnableScrap;
+            foreach (CustomLevel NextCustomLevel in CustomLevelList.Values) {
+                AddMoonToMoonsList(NextCustomLevel, __instance);
             }
             return true;
         }
 
+        //Add the custom moon to the terminal
         [HarmonyPatch(typeof(StartOfRound), "Awake")]
         [HarmonyPostfix]
-        [HarmonyPriority(30)]
         private static void AddMoonsToTerminal(StartOfRound __instance) {
-            foreach (CustomLevel Moon in CustomLevelList.Values) {
-                TerminalUtils.AddMoonTerminalEntry(Moon.GetTerminalName(), Moon.GetLevel());
-                TerminalUtils.AddMoonConfirmation(Moon.GetTerminalName(), Moon.GetTerminalRoute());
-                TerminalUtils.AddMoonInfo(Moon.GetTerminalName(), Moon.GetTerminalInfo());
-            }
-
+            foreach (CustomLevel NextCustomLevel in CustomLevelList.Values) {
+                TerminalUtils.AddMoonTerminalEntry(NextCustomLevel.LevelKeyword, NextCustomLevel.NewLevel);
+                TerminalUtils.AddRouteNode(NextCustomLevel.LevelKeyword, NextCustomLevel.TerminalRoute);
+                TerminalUtils.AddMoonInfo(NextCustomLevel.LevelKeyword, NextCustomLevel.LevelTerminalInfo);
+            }  
         }
 
+        //Destroy the necessary actors and set our scene
         [HarmonyPatch(typeof(StartOfRound), "SceneManager_OnLoadComplete1")]
         [HarmonyPostfix]
-        [HarmonyPriority(0)]
         private static void CustomLevelInit(StartOfRound __instance) {
-            List<string> levelnames = new List<string>();
-            string TargetLevelName = __instance.currentLevel.PlanetName;
-            if (!CustomLevelList.Keys.ToArray().Contains(TargetLevelName)) {
+
+            if (!CustomLevelList.ContainsKey(__instance.currentLevel.PlanetName)) {
                 return;
             }
-
-            Debug.Log("LethalLib: Loading into level " + TargetLevelName);
+            CustomLevel LevelToLoad = CustomLevelList.GetValueSafe<string, CustomLevel>(__instance.currentLevel.PlanetName);
+            Debug.Log(" LethalLib Moon Tools: Loading into level " + __instance.currentLevel.PlanetName);
 
             GameObject[] allObjects = GameObject.FindObjectsOfType<GameObject>();
-
             foreach (GameObject ObjToDestroy in allObjects) {
-                foreach (string UnwantedObjString in ObjectsToDestroy) {
+                if (ObjToDestroy.name.Contains("Models2VowFactory")) {
+                    ObjToDestroy.SetActive(false);
+                }
+
+                //If the object's named Plane and its parent is Foliage, it's also gotta go. This gets rid of the grass
+                if (ObjToDestroy.name.Contains("Plane") && (ObjToDestroy.transform.parent.gameObject.name.Contains("Foliage") || ObjToDestroy.transform.parent.gameObject.name.Contains("Mounds"))) {
+                    GameObject.Destroy(ObjToDestroy);
+                }
+                foreach (string UnwantedObjString in LevelToLoad.GetDestroyList()) {
                     //If the object has any of the names in the list, it's gotta go
                     if (ObjToDestroy.name.Contains(UnwantedObjString)) {
                         GameObject.Destroy(ObjToDestroy);
+                        continue;
                     }
-                }
-                //If the object's named Plane and its parent is Foliage, it's also gotta go. This gets rid of the grass
-                if (ObjToDestroy.name.Contains("Plane") && ObjToDestroy.transform.parent.gameObject.name.Contains("Foliage")) {
-                    GameObject.Destroy(ObjToDestroy);
                 }
             }
             //Load our custom prefab
-            GameObject MyLevelAsset = CustomLevelList[TargetLevelName].GetLevelObject() as GameObject;
+            GameObject MyLevelAsset = LevelToLoad.LevelPrefab as GameObject;
             GameObject MyInstantiatedLevel = GameObject.Instantiate(MyLevelAsset);
-        }
+        }       
     }
 }

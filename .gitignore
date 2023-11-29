@@ -11,6 +11,7 @@
 /[Uu]ser[Ss]ettings/
 /Properties/
 
+
 # MemoryCaptures can get excessive in size.
 # They also could contain extremely sensitive data
 /[Mm]emoryCaptures/
@@ -13652,3 +13653,5 @@ Unity/LethalCompanyProject/ProjectSettings/XRSettings.asset
 Unity/LethalCompanyProject/UserSettings/EditorUserSettings.asset
 Unity/LethalCompanyProject/UserSettings/Layouts/default-2022.dwlt
 Unity/LethalCompanyProject/UserSettings/Search.settings
+
+bin/Debug/*
