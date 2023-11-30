@@ -23,10 +23,15 @@ namespace LethalLib.Modules
         private static void Terminal_Start(On.Terminal.orig_Start orig, Terminal self)
         {
             var infoKeyword = self.terminalNodes.allKeywords.First(keyword => keyword.word == "info");
+            var addedEnemies = new List<string>();
             foreach (SpawnableEnemy spawnableEnemy in spawnableEnemies)
             {
                 // if terminal node is null, create one
-                
+                if (addedEnemies.Contains(spawnableEnemy.enemy.enemyName))
+                {
+                    Plugin.logger.LogInfo($"Skipping {spawnableEnemy.enemy.enemyName} because it was already added");
+                    continue;
+                }
 
                 if (spawnableEnemy.terminalNode == null)
                 {
@@ -37,10 +42,11 @@ namespace LethalLib.Modules
                     spawnableEnemy.terminalNode.creatureName = spawnableEnemy.enemy.enemyName;
                 }
 
-                var keyword = TerminalUtils.CreateTerminalKeyword(spawnableEnemy.terminalNode.creatureName.ToLowerInvariant().Replace(" ", "-"), defaultVerb: infoKeyword);
+                var keyword = spawnableEnemy.infoKeyword != null ? spawnableEnemy.infoKeyword : TerminalUtils.CreateTerminalKeyword(spawnableEnemy.terminalNode.creatureName.ToLowerInvariant().Replace(" ", "-"), defaultVerb: infoKeyword);
                 var allKeywords = self.terminalNodes.allKeywords.ToList();
                 allKeywords.Add(keyword);
                 self.terminalNodes.allKeywords = allKeywords.ToArray();
+
 
                 var itemInfoNouns = infoKeyword.compatibleNouns.ToList();
                 itemInfoNouns.Add(new CompatibleNoun()
@@ -49,6 +55,8 @@ namespace LethalLib.Modules
                     result = spawnableEnemy.terminalNode
                 });
                 infoKeyword.compatibleNouns = itemInfoNouns.ToArray();
+     
+
 
                 spawnableEnemy.terminalNode.creatureFileID = self.enemyFiles.Count;
 
@@ -136,6 +144,7 @@ namespace LethalLib.Modules
             public Levels.LevelTypes spawnLevels;
             public SpawnType spawnType;
             public TerminalNode terminalNode;
+            public TerminalKeyword infoKeyword;
             public string modName;
 
 
@@ -150,24 +159,27 @@ namespace LethalLib.Modules
 
         public static List<SpawnableEnemy> spawnableEnemies = new List<SpawnableEnemy>();
 
-        public static void RegisterEnemy(EnemyType enemy, int rarity, Levels.LevelTypes levelFlags, SpawnType spawnType, TerminalNode infoNode = null)
+        public static void RegisterEnemy(EnemyType enemy, int rarity, Levels.LevelTypes levelFlags, SpawnType spawnType, TerminalNode infoNode = null, TerminalKeyword infoKeyword = null)
         {
             var spawnableEnemy = new SpawnableEnemy(enemy, rarity, levelFlags, spawnType);
 
             spawnableEnemy.terminalNode = infoNode;
+            spawnableEnemy.infoKeyword = infoKeyword;
 
             var callingAssembly = Assembly.GetCallingAssembly();
             var modDLL = callingAssembly.GetName().Name;
             spawnableEnemy.modName = modDLL;
 
+
             spawnableEnemies.Add(spawnableEnemy);
         }
 
-        public static void RegisterEnemy(EnemyType enemy, int rarity, Levels.LevelTypes levelFlags, TerminalNode infoNode = null)
+        public static void RegisterEnemy(EnemyType enemy, int rarity, Levels.LevelTypes levelFlags, TerminalNode infoNode = null, TerminalKeyword infoKeyword = null)
         {
             var spawnableEnemy = new SpawnableEnemy(enemy, rarity, levelFlags, enemy.isDaytimeEnemy ? SpawnType.Daytime : enemy.isOutsideEnemy ? SpawnType.Outside : SpawnType.Default);
 
             spawnableEnemy.terminalNode = infoNode;
+            spawnableEnemy.infoKeyword = infoKeyword;
 
             var callingAssembly = Assembly.GetCallingAssembly();
             var modDLL = callingAssembly.GetName().Name;
