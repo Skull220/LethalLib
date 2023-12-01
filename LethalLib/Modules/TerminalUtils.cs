@@ -41,20 +41,22 @@ namespace LethalLib.Modules
         static TerminalKeyword RouteKeyword;
         static TerminalKeyword InfoKeyword;
 
-        public static void GrabTerminal(StartOfRound __instance){
+        private static void GrabTerminal(){
             ActiveTerminal = GameObject.Find("TerminalScript").GetComponent<Terminal>(); //Terminal object reference 
             RouteKeyword = ActiveTerminal.terminalNodes.allKeywords[26];
             InfoKeyword = ActiveTerminal.terminalNodes.allKeywords[6];
         }
-        public static void AddMoonTerminalEntry(TerminalKeyword MoonEntryName, SelectableLevel Level) { 
+        public static void AddMoonTerminalKeyword(TerminalKeyword MoonEntryName, SelectableLevel Level) { 
             TerminalKeyword TerminalEntry = MoonEntryName; //get our bundle's Terminal Keyword 
             TerminalEntry.defaultVerb = RouteKeyword;
-            Array.Resize<SelectableLevel>(ref ActiveTerminal.moonsCatalogueList, ActiveTerminal.moonsCatalogueList.Length + 1); //Resize list of moons displayed 
+            Array.Resize<SelectableLevel>(ref ActiveTerminal.moonsCatalogueList, ActiveTerminal.moonsCatalogueList.Length + 1); //Resize list of moons for catalogue
             ActiveTerminal.moonsCatalogueList[ActiveTerminal.moonsCatalogueList.Length -1 ] = Level; //Add our moon to that list
                 
             Array.Resize<TerminalKeyword>(ref ActiveTerminal.terminalNodes.allKeywords, ActiveTerminal.terminalNodes.allKeywords.Length + 1);
             ActiveTerminal.terminalNodes.allKeywords[ActiveTerminal.terminalNodes.allKeywords.Length - 1] = TerminalEntry; //Add our terminal entry 
             TerminalEntry.defaultVerb = RouteKeyword; //Set its default verb to "route"
+
+
         }
         public static void AddRouteNode(TerminalKeyword MoonEntryName, TerminalNode RouteNode) {
             RouteNode.terminalOptions[0].noun = ActiveTerminal.terminalNodes.allKeywords[4];
@@ -85,6 +87,21 @@ namespace LethalLib.Modules
                 noun = MoonEntryName,
                 result = MoonInfo
             };
+        }
+        [HarmonyPatch(typeof(Terminal), "Awake")]
+        [HarmonyPrefix]
+        public static void Awake(Terminal __instance) {
+
+            //Code here adapted from Bizzlemip's Moon API
+            TerminalNode MoonsCatalogueList = __instance.terminalNodes.allKeywords[21].specialKeywordResult;
+            MoonsCatalogueList.displayText.Substring(MoonsCatalogueList.displayText.Length - 3);
+            GrabTerminal();
+            foreach(Levels.CustomLevel UserLevels in Levels.CustomLevelList.Values) {
+                AddMoonTerminalKeyword(UserLevels.LevelKeyword, UserLevels.NewLevel);
+                AddRouteNode(UserLevels.LevelKeyword, UserLevels.TerminalRoute);
+                AddMoonInfo(UserLevels.LevelKeyword, UserLevels.LevelTerminalInfo);
+                MoonsCatalogueList.displayText += "\n* " + UserLevels.MoonFriendlyName + " [planetTime]";
+            }
         }
     }
     }
