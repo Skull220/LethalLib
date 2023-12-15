@@ -118,6 +118,5 @@ namespace LethalLib.Modules
             PatchTerminal = false;
             return;
         }
-        }
     }
-    }
+}
