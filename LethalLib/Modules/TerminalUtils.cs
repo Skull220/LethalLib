@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
+using static LethalLib.Modules.Levels;
 
 namespace LethalLib.Modules
 {
@@ -34,9 +35,10 @@ namespace LethalLib.Modules
             keyword.accessTerminalObjects = accessTerminalObjects;
             return keyword;
         }
-        
+
         //Terminal commands for custom moon stuff
 
+        private static bool PatchTerminal = true;
         public static Terminal ActiveTerminal;
         static TerminalKeyword RouteKeyword;
         static TerminalKeyword InfoKeyword;
@@ -88,20 +90,27 @@ namespace LethalLib.Modules
                 result = MoonInfo
             };
         }
-        [HarmonyPatch(typeof(Terminal), "Awake")]
-        [HarmonyPrefix]
-        public static void Awake(Terminal __instance) {
 
-            //Code here adapted from Bizzlemip's Moon API
-            TerminalNode MoonsCatalogueList = __instance.terminalNodes.allKeywords[21].specialKeywordResult;
-            MoonsCatalogueList.displayText.Substring(MoonsCatalogueList.displayText.Length - 3);
-            GrabTerminal();
-            foreach(Levels.CustomLevel UserLevels in Levels.CustomLevelList.Values) {
-                AddMoonTerminalKeyword(UserLevels.LevelKeyword, UserLevels.NewLevel);
-                AddRouteNode(UserLevels.LevelKeyword, UserLevels.TerminalRoute);
-                AddMoonInfo(UserLevels.LevelKeyword, UserLevels.LevelTerminalInfo);
-                MoonsCatalogueList.displayText += "\n* " + UserLevels.MoonFriendlyName + " [planetTime]";
+        public static void AddMoonToCatalogue(Terminal __instance) {
+            if (!PatchTerminal) {
+                return;
             }
+
+            Dictionary<string, CustomLevel> moons = CustomLevelList;
+            Terminal ActiveTerminal = GameObject.Find("TerminalScript").GetComponent<Terminal>();
+            TerminalNode specialKeywordResult = ActiveTerminal.terminalNodes.allKeywords[21].specialKeywordResult;
+            specialKeywordResult.displayText.Substring(specialKeywordResult.displayText.Length - 3);
+
+            foreach (string MoonName in CustomLevelList.Keys) {
+                TerminalNode terminalNode = specialKeywordResult;
+                terminalNode.displayText = terminalNode.displayText + "\n* " + MoonName + " [planetTime]";
+            }
+
+            TerminalNode terminalNode2 = specialKeywordResult;
+            terminalNode2.displayText += "\n\n";
+            PatchTerminal = false;
+            return;
+        }
         }
     }
     }

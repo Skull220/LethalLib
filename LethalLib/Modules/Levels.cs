@@ -24,6 +24,13 @@ namespace LethalLib.Modules
          * If I need to move it to a seperate class let me know -Skull
          */
 
+        //Following two methods taken from MoonAPI w/ permission, thanks Bizzlemip
+        public static T[] ResizeArray<T>(T[] oldArray, int newSize) {
+            T[] array = new T[newSize];
+            oldArray.CopyTo(array, 0);
+            return array;
+        }
+
         public static Dictionary<string, CustomLevel> CustomLevelList;
 
         public class CustomLevel {
@@ -51,6 +58,9 @@ namespace LethalLib.Modules
             public static void AddObjectToDestroyList(string NewObjectName) {
                 ObjectsToDestroy.Add(NewObjectName);
             }
+            public static void ClearObjectToDestroyList() {
+                ObjectsToDestroy.Clear();
+            }
 
             public List<string> GetDestroyList() { return ObjectsToDestroy; }
 
@@ -71,8 +81,13 @@ namespace LethalLib.Modules
                 
             }
         }
- 
-        public static void AddMoonToMoonsList(CustomLevel Moon, StartOfRound __instance) {
+        
+        public static void AddMoonsToMoonList(StartOfRound __instance) {
+            foreach(CustomLevel moon in CustomLevelList.Values) { 
+                
+            
+            
+            }
             SelectableLevel MyNewMoon = Moon.NewLevel;  
             {
                 /* TODO: these assignments should only be made if there's no entry in any of these arrays already.
@@ -89,6 +104,10 @@ namespace LethalLib.Modules
                 MyNewMoon.OutsideEnemies = __instance.levels[0].OutsideEnemies;
                 MyNewMoon.DaytimeEnemies = __instance.levels[0].DaytimeEnemies;
             }
+            __instance.levels = ResizeArray<SelectableLevel>(__instance.levels, __instance.levels.Length + Moons.Count<KeyValuePair<string, SelectableLevel>>());
+
+
+
             int num = -1;
             for (int i = 0; i < __instance.levels.Length; i++) {
                 if (__instance.levels[i] == null) {
