@@ -24,13 +24,6 @@ namespace LethalLib.Modules
          * If I need to move it to a seperate class let me know -Skull
          */
 
-        //Following two methods taken from MoonAPI w/ permission, thanks Bizzlemip
-        public static T[] ResizeArray<T>(T[] oldArray, int newSize) {
-            T[] array = new T[newSize];
-            oldArray.CopyTo(array, 0);
-            return array;
-        }
-
         public static Dictionary<string, CustomLevel> CustomLevelList;
 
         public class CustomLevel {
@@ -81,15 +74,18 @@ namespace LethalLib.Modules
                 
             }
         }
-        
+        [HarmonyPatch(typeof(StartOfRound), "Awake")]
+        [HarmonyPrefix]
+        [HarmonyPriority(0)]
         public static void AddMoonsToMoonList(StartOfRound __instance) {
-            foreach(CustomLevel moon in CustomLevelList.Values) { 
-                
             
-            
-            }
-            SelectableLevel MyNewMoon = Moon.NewLevel;  
-            {
+            //Resize the levels array to include all of our new ones
+            SelectableLevel[] newLevelArray = new SelectableLevel[__instance.levels.Length + CustomLevelList.Count];
+            __instance.levels.CopyTo(newLevelArray, 0);
+            __instance.levels = newLevelArray;
+
+            foreach (CustomLevel moon in CustomLevelList.Values) {
+                SelectableLevel MyNewMoon = moon.NewLevel;
                 /* TODO: these assignments should only be made if there's no entry in any of these arrays already.
                  * Hopefully, the end user would be able to put their custom monsters/scrap/whatever into the 
                  * SelectableLevel class they made in unity or set it before this point or something.
@@ -103,24 +99,24 @@ namespace LethalLib.Modules
                 MyNewMoon.levelAmbienceClips = __instance.levels[2].levelAmbienceClips;
                 MyNewMoon.OutsideEnemies = __instance.levels[0].OutsideEnemies;
                 MyNewMoon.DaytimeEnemies = __instance.levels[0].DaytimeEnemies;
-            }
-            __instance.levels = ResizeArray<SelectableLevel>(__instance.levels, __instance.levels.Length + Moons.Count<KeyValuePair<string, SelectableLevel>>());
-
-
-
-            int num = -1;
-            for (int i = 0; i < __instance.levels.Length; i++) {
-                if (__instance.levels[i] == null) {
-                    num = i;
-                    break;
+                
+                int num = -1;
+                for (int i = 0; i < __instance.levels.Length; i++) {
+                    if (__instance.levels[i] == null) {
+                        num = i;
+                        break;
+                    }
                 }
+                if (num == -1) {
+                    throw new NullReferenceException("No slot in level list to put new level in!");
+                }
+                __instance.levels[num] = MyNewMoon;
             }
-            if (num == -1) {
-                throw new NullReferenceException("No null value found in StartOfRound.levels");
-            }
-            __instance.levels[num] = Moon.NewLevel;
+            TerminalUtils.AddMoonsToCatalogue();
         }
 
+        [HarmonyPatch(typeof(StartOfRound), "SceneManager_OnLoadComplete1")]
+        [HarmonyPostfix]
         public static void CreateMoonOnNav(StartOfRound __instance) {
             if (!CustomLevelList.ContainsKey(__instance.currentLevel.PlanetName)) {
                 return;

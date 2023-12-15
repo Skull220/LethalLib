@@ -16,8 +16,7 @@ using static LethalLib.Modules.Enemies;
 namespace LethalLib
 {
     [BepInPlugin(ModGUID, ModName, ModVersion)]
-    public class Plugin : BaseUnityPlugin
-    {
+    public class Plugin : BaseUnityPlugin {
         public const string ModGUID = "evaisa.lethallib";
         public const string ModName = "LethalLib";
         public const string ModVersion = "0.5.0";
@@ -27,8 +26,7 @@ namespace LethalLib
         public static BepInEx.Logging.ManualLogSource logger;
 
 
-        private void Awake()
-        {
+        private void Awake() {
             logger = Logger;
 
             Logger.LogInfo($"LethalLib loaded!!");
@@ -43,8 +41,7 @@ namespace LethalLib
         }
 
 
-        private void IlHook(ILContext il)
-        {
+        private void IlHook(ILContext il) {
             var cursor = new ILCursor(il);
             cursor.GotoNext(
                 x => x.MatchCallvirt(typeof(StackFrame).GetMethod("GetFileLineNumber", BindingFlags.Instance | BindingFlags.Public))
@@ -53,19 +50,14 @@ namespace LethalLib
             cursor.EmitDelegate<Func<StackFrame, string>>(GetLineOrIL);
         }
 
-        private static string GetLineOrIL(StackFrame instance)
-        {
+        private static string GetLineOrIL(StackFrame instance) {
             var line = instance.GetFileLineNumber();
-            if (line == StackFrame.OFFSET_UNKNOWN || line == 0)
-            {
+            if (line == StackFrame.OFFSET_UNKNOWN || line == 0) {
                 return "IL_" + instance.GetILOffset().ToString("X4");
             }
 
             return line.ToString();
         }
-
-
-
 
     }
 }

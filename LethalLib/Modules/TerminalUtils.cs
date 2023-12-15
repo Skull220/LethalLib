@@ -48,6 +48,8 @@ namespace LethalLib.Modules
             RouteKeyword = ActiveTerminal.terminalNodes.allKeywords[26];
             InfoKeyword = ActiveTerminal.terminalNodes.allKeywords[6];
         }
+        [HarmonyPatch(typeof(StartOfRound), "Awake")]
+        [HarmonyPostfix]
         public static void AddMoonTerminalKeyword(TerminalKeyword MoonEntryName, SelectableLevel Level) { 
             TerminalKeyword TerminalEntry = MoonEntryName; //get our bundle's Terminal Keyword 
             TerminalEntry.defaultVerb = RouteKeyword;
@@ -60,6 +62,9 @@ namespace LethalLib.Modules
 
 
         }
+
+        [HarmonyPatch(typeof(StartOfRound), "Awake")]
+        [HarmonyPostfix]
         public static void AddRouteNode(TerminalKeyword MoonEntryName, TerminalNode RouteNode) {
             RouteNode.terminalOptions[0].noun = ActiveTerminal.terminalNodes.allKeywords[4];
             RouteNode.terminalOptions[0].result = new TerminalNode {
@@ -82,8 +87,10 @@ namespace LethalLib.Modules
                 result = RouteNode
             };
         }
+        [HarmonyPatch(typeof(StartOfRound), "Awake")]
+        [HarmonyPostfix]
         public static void AddMoonInfo(TerminalKeyword MoonEntryName, TerminalNode MoonInfo) {
-            //Resize our RouteKeyword array and put our new route confirmation into it
+            //Resize our RouteKeyword array and put our new info into it
             Array.Resize<CompatibleNoun>(ref InfoKeyword.compatibleNouns, InfoKeyword.compatibleNouns.Length + 1);
             InfoKeyword.compatibleNouns[InfoKeyword.compatibleNouns.Length - 1] = new CompatibleNoun {
                 noun = MoonEntryName,
@@ -91,7 +98,7 @@ namespace LethalLib.Modules
             };
         }
 
-        public static void AddMoonToCatalogue(Terminal __instance) {
+        public static void AddMoonsToCatalogue() {
             if (!PatchTerminal) {
                 return;
             }
