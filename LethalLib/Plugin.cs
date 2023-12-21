@@ -9,17 +9,19 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using System.Security.Permissions;
 using Unity.Netcode;
 using UnityEngine;
 using static LethalLib.Modules.Enemies;
 
+[assembly: SecurityPermission(SecurityAction.RequestMinimum, SkipVerification = true)]
 namespace LethalLib
 {
     [BepInPlugin(ModGUID, ModName, ModVersion)]
     public class Plugin : BaseUnityPlugin {
         public const string ModGUID = "evaisa.lethallib";
         public const string ModName = "LethalLib";
-        public const string ModVersion = "0.5.0";
+        public const string ModVersion = "0.6.3";
 
         public static AssetBundle MainAssets;
 
@@ -36,7 +38,8 @@ namespace LethalLib
             Enemies.Init();
             Items.Init();
             Unlockables.Init();
-            MapObjects.Init();
+            MapObjects.Init();  
+            Dungeon.Init();
             LethalLib.Modules.NetworkPrefabs.Init();
         }
 
