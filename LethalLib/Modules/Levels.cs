@@ -17,7 +17,8 @@ namespace LethalLib.Modules
             RendLevel = 1 << 6,
             DineLevel = 1 << 7,
             TitanLevel = 1 << 8,
-            All = ExperimentationLevel | AssuranceLevel | VowLevel | OffenseLevel | MarchLevel | RendLevel | DineLevel | TitanLevel
+            OoblterraLevel = 1 << 9,
+            All = ExperimentationLevel | AssuranceLevel | VowLevel | OffenseLevel | MarchLevel | RendLevel | DineLevel | TitanLevel | OoblterraLevel
         }
 
         /* This class is called levels so I'm putting all the custom level code here.
@@ -69,7 +70,6 @@ namespace LethalLib.Modules
                 LevelTerminalInfo = newTerminalInfo;
                 LevelPrefab = newLevelPrefab;
                 MoonFriendlyName = NewLevel.PlanetName;
-
                 CustomLevelList.AddItem(new KeyValuePair<string, CustomLevel>(MoonFriendlyName, this));
                 
             }
